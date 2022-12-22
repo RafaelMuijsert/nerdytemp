@@ -47,9 +47,28 @@ def archive_temperature(db):
         db.commit()
     except Exception as err:
         logging.error(f'Could not archive temperatures: {err}')
-
+        return False
 
     logging.info('Archived temperatures')
+    return True
+
+def connect_to_database(config):
+    db = False
+    while not db:
+        try:
+            db = mariadb.connect(
+                host=config['host'],
+                port=int(config['port']),
+                user=config['user'],
+                password=config['password'],
+                database=config['db']
+            )
+            return db
+        except Exception as err:
+            logging.error(f'Could not connect to database: {err}')
+            db = False
+        
+        sleep(config['reconnect-interval'])
 
 def main():
     parser = argparse.ArgumentParser()
@@ -57,24 +76,17 @@ def main():
     
     config = configparser.ConfigParser()
     config.read('/etc/nerdytemp/nerdytemp.ini')
+
     logging.basicConfig(level=logging.INFO)
 
     sense = SenseHat()
-    try:
-        db = mariadb.connect(
-            host=config['db']['host'],
-            port=int(config['db']['port']),
-            user=config['db']['user'],
-            password=config['db']['password'],
-            database=config['db']['db']
-        )
-    except Exception as err:
-        logging.error(f'Could not connect to database: {err}')
-        exit(1)
-
+    db = connect_to_database(config['db'])
     while True:
-        archive_temperature(db)
-        update_database(db, get_temperature(sense, int(config['nerdytemp']['offset'])))
+        if not archive_temperature(db):
+            db = connect_to_database(config['db'])
+        if not update_database(db, get_temperature(sense, int(config['nerdytemp']['offset']))):
+            db = connect_to_database(config['db'])
+
         sleep(int(config['nerdytemp']['interval']))
 
     db.close()
