@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 
-import os
 import logging
 import configparser
-import xdg
 import MySQLdb as mariadb
+import argparse
 
 from sense_hat import SenseHat
 from time import sleep, strftime
 from datetime import datetime
 
-
-TEMPERATURE_OFFSET = 13
-
-
-def get_temperature(sense):
-    return sense.get_temperature() - TEMPERATURE_OFFSET
+def get_temperature(sense, offset):
+    return sense.get_temperature() - offset
 
 def update_database(db, temperature):
     cursor = db.cursor()
@@ -57,17 +52,21 @@ def archive_temperature(db):
     logging.info('Archived temperatures')
 
 def main():
-    config = configparser.ConfigParser().read('/etc/nerdytemp/config.ini')
+    parser = argparse.ArgumentParser()
+    parser.parse_args()
+    
+    config = configparser.ConfigParser()
+    config.read('/etc/nerdytemp/nerdytemp.ini')
     logging.basicConfig(level=logging.INFO)
 
     sense = SenseHat()
     try:
         db = mariadb.connect(
-            host='nerdygadgets.shop',
-            port=33646,
-            user='nerd',
-            password=os.getenv('DB_PASSWORD'),
-            database='nerdygadgets'
+            host=config['db']['host'],
+            port=int(config['db']['port']),
+            user=config['db']['user'],
+            password=config['db']['password'],
+            database=config['db']['db']
         )
     except Exception as err:
         logging.error(f'Could not connect to database: {err}')
@@ -75,8 +74,8 @@ def main():
 
     while True:
         archive_temperature(db)
-        update_database(db, get_temperature(sense))
-        sleep(3)
+        update_database(db, get_temperature(sense, int(config['nerdytemp']['offset'])))
+        sleep(int(config['nerdytemp']['interval']))
 
     db.close()
 

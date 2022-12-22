@@ -6,3 +6,6 @@ After=network.target
 Type=simple
 ExecStart=/usr/local/bin/nerdytemp
 Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
