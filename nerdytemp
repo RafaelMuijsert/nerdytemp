@@ -29,21 +29,21 @@ def update_database(db, temperature):
     logging.info(f'Inserted temperature {temperature} into database')
 
 def archive_temperature(db):
-    cursor = db.cursor()
-    statement = """
-    UPDATE coldroomtemperatures SET ValidTo = %s;
-    """
-    date = strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute(statement, (date,))
-    statement = """
-    INSERT INTO coldroomtemperatures_archive (SELECT * FROM coldroomtemperatures);
-    """
-    cursor.execute(statement)
-    statement = """
-    DELETE FROM coldroomtemperatures;
-    """
-    cursor.execute(statement)
     try:
+        cursor = db.cursor()
+        statement = """
+        UPDATE coldroomtemperatures SET ValidTo = %s;
+        """
+        date = strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute(statement, (date,))
+        statement = """
+        INSERT INTO coldroomtemperatures_archive (SELECT * FROM coldroomtemperatures);
+        """
+        cursor.execute(statement)
+        statement = """
+        DELETE FROM coldroomtemperatures;
+        """
+        cursor.execute(statement)
         db.commit()
     except Exception as err:
         logging.error(f'Could not archive temperatures: {err}')
