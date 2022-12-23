@@ -13,14 +13,14 @@ def get_temperature(sense, offset):
     return sense.get_temperature() - offset
 
 def update_database(db, temperature):
-    cursor = db.cursor()
-
-    statement = """
-    INSERT INTO coldroomtemperatures(ColdRoomSensorNumber, RecordedWhen, Temperature, ValidFrom, ValidTo)
-    VALUES(%s, %s, %s, %s, %s)
-    """
-    values = (1, datetime.now(), temperature, datetime.now(), '9999-12-31 23:59:59')
     try:
+        cursor = db.cursor()
+
+        statement = """
+        INSERT INTO coldroomtemperatures(ColdRoomSensorNumber, RecordedWhen, Temperature, ValidFrom, ValidTo)
+        VALUES(%s, %s, %s, %s, %s)
+        """
+        values = (1, datetime.now(), temperature, datetime.now(), '9999-12-31 23:59:59')
         cursor.execute(statement, values)
         db.commit()
     except Exception as err:
