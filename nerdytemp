@@ -70,7 +70,7 @@ def connect_to_database(config):
             logging.error(f'Could not connect to database: {err}')
             db = False
         
-        sleep(config['reconnect-interval'])
+        sleep(int(config['reconnect-interval']))
 
 def main():
     parser = argparse.ArgumentParser()
