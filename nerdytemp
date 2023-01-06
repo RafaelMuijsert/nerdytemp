@@ -9,17 +9,42 @@ from sense_hat import SenseHat
 from time import sleep, strftime
 from datetime import datetime
 
-def get_temperature(sense, offset):
-    return sense.get_temperature() - offset
+def get_temperature(sense, offset) -> float:
+    """Get temperature from SenseHat pressure sensor
+
+    Args:
+        sense: instance of SenseHat class
+        offset (int): integer to be subtracted for improved accuracy
+
+    Returns:
+        float: measured and adjusted temperature
+    """    
+    return float(sense.get_temperature_from_pressure()) - int(offset)
 
 
-def update_temperature(db, temperature):
+def update_temperature(db, temperature) -> bool:
+    """Updates coldroom temperature in database and archives old temperature
+    using the 'update_temperature' procedure.
+
+    Args:
+        db: MariaDB connection
+        temperature (float): temperature to archive
+
+    Returns:
+        bool: True on success, False on failure
+    """    
     try:
         cursor = db.cursor()
         statement = """
         CALL update_temperature(%s, %s, %s, %s, %s)
         """
-        values = (1, datetime.now(), temperature, datetime.now(), '9999-12-31 23:59:59')
+        values = (
+            1,
+            datetime.now(), 
+            temperature,
+            datetime.now(),
+            '9999-12-31 23:59:59'
+        )
         cursor.execute(statement, values)
         db.commit()
     except Exception as err:
@@ -27,8 +52,17 @@ def update_temperature(db, temperature):
         return False
     
     logging.info(f'Updated temperature to {temperature}')
+    return True
 
 def connect_to_database(config):
+    """Continuously attempt to connect to database using provided configuration.
+
+    Args:
+        config (object): containing: host, port, user, password, db
+
+    Returns:
+        MariaDB instance: a valid MariaDB connection
+    """    
     db = False
     while not db:
         try:
@@ -47,6 +81,8 @@ def connect_to_database(config):
         sleep(int(config['reconnect-interval']))
 
 def main():
+    """Reads configuration and continuously updates temperature
+    """    
     parser = argparse.ArgumentParser()
     parser.parse_args()
     
