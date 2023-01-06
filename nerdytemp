@@ -12,47 +12,21 @@ from datetime import datetime
 def get_temperature(sense, offset):
     return sense.get_temperature() - offset
 
-def update_database(db, temperature):
+
+def update_temperature(db, temperature):
     try:
         cursor = db.cursor()
-
         statement = """
-        INSERT INTO coldroomtemperatures(ColdRoomSensorNumber, RecordedWhen, Temperature, ValidFrom, ValidTo)
-        VALUES(%s, %s, %s, %s, %s)
+        CALL update_temperature(%s, %s, %s, %s, %s)
         """
         values = (1, datetime.now(), temperature, datetime.now(), '9999-12-31 23:59:59')
         cursor.execute(statement, values)
         db.commit()
     except Exception as err:
-        logging.error(f'Could not insert temperature into database: {err}')
+        logging.error(f'Could not update temperature in database: {err}')
         return False
-
-    logging.info(f'Inserted temperature {temperature} into database')
-    return True
-
-def archive_temperature(db):
-    try:
-        cursor = db.cursor()
-        statement = """
-        UPDATE coldroomtemperatures SET ValidTo = %s;
-        """
-        date = strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute(statement, (date,))
-        statement = """
-        INSERT INTO coldroomtemperatures_archive (SELECT * FROM coldroomtemperatures);
-        """
-        cursor.execute(statement)
-        statement = """
-        DELETE FROM coldroomtemperatures;
-        """
-        cursor.execute(statement)
-        db.commit()
-    except Exception as err:
-        logging.error(f'Could not archive temperatures: {err}')
-        return False
-
-    logging.info('Archived temperatures')
-    return True
+    
+    logging.info(f'Updated temperature to {temperature}')
 
 def connect_to_database(config):
     db = False
@@ -77,16 +51,14 @@ def main():
     parser.parse_args()
     
     config = configparser.ConfigParser()
-    config.read('/etc/nerdytemp/nerdytemp.ini')
+    config.read('./nerdytemp.ini')
 
     logging.basicConfig(level=logging.INFO)
 
     sense = SenseHat()
     db = connect_to_database(config['db'])
     while True:
-        if not archive_temperature(db):
-            db = connect_to_database(config['db'])
-        if not update_database(db, get_temperature(sense, int(config['nerdytemp']['offset']))):
+        if not update_temperature(db, get_temperature(sense, int(config['nerdytemp']['offset']))):
             db = connect_to_database(config['db'])
 
         sleep(int(config['nerdytemp']['interval']))
