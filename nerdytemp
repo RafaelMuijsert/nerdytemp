@@ -24,7 +24,15 @@ def get_temperature(sense, offset) -> float:
 
 def update_temperature(db, temperature) -> bool:
     """Updates coldroom temperature in database and archives old temperature
-    using the 'update_temperature' procedure.
+    using the 'update_temperature' procedure:
+
+    PROCEDURE `update_temperature`(
+        IN sensor_number INT(11),
+        IN recorded_when datetime,
+        IN temperature decimal(10,2),
+        IN valid_from datetime,
+        IN valid_to datetime
+    )
 
     Args:
         db: MariaDB connection
