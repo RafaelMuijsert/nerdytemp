@@ -51,7 +51,7 @@ def main():
     parser.parse_args()
     
     config = configparser.ConfigParser()
-    config.read('./nerdytemp.ini')
+    config.read('/etc/nerdytemp/nerdytemp.ini')
 
     logging.basicConfig(level=logging.INFO)
 
